@@ -51,5 +51,6 @@ pair(s::Symbol) = string(s) => Core.eval(Main, s)
 json(x::Number) = x
 json(s::AbstractString) = s
 json(s::Symbol) = Core.eval(Main, s)
+json(c::Char) = string(c)
 
 end
