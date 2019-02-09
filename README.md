@@ -1,4 +1,7 @@
 # JSObjectLiteral.jl
+
+[![Build Status](https://travis-ci.org/davidavdav/JSObjectLiteral.jl.svg?branch=master)](https://travis-ci.org/davidavdav/JSObjectLiteral.jl)
+
 Parse javascript-like object literals in Julia into a Julia object
 
 This package provides a macro `@json` than parses a Julia expression, and tries to form Julia object from that.  You can use javascript shortcuts like `@json { a: b }` to write `Dict("a" => b)` and even `@json { a }` to write `Dict("a" => a)`.
