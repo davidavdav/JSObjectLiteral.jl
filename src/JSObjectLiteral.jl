@@ -1,6 +1,8 @@
 module JSObjectLiteral
 
-export @json, json
+export @json, @get
+
+eeval(x) = Core.eval(Main, x)
 
 """
 @json expression
@@ -36,7 +38,7 @@ function json(e:: Expr)
     elseif e.head == :vect
         return [json(a) for a in e.args]
     else
-        return nothing
+        return Core.eval(Main, e)
     end
 end
 
@@ -52,5 +54,30 @@ json(x::Number) = x
 json(s::AbstractString) = s
 json(s::Symbol) = Core.eval(Main, s)
 json(c::Char) = string(c)
+json(x::T) where T = error("Not a JSON literal type ", T)
+
+
+macro get(expr::Expr)
+    if expr.head == :.
+        eeval(get(expr.args...))
+    else
+        error("Expected . operator")
+    end
+end
+
+macro get(x)
+    eeval(x)
+end
+
+function get(dict::Symbol, key::QuoteNode)
+    return Expr(:ref, dict, string(key.value))
+end
+
+function get(expr::Expr, key::QuoteNode)
+    if expr.head == :.
+        dict = get(expr.args...)
+        return Expr(:ref, dict, string(key.value))
+    end
+end
 
 end

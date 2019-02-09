@@ -27,3 +27,8 @@ b = Dict{String, Any}(
 @test a == b
 
 @test Dict{String, Any}( "a" => "a") == @json { a: "a" }
+
+a = @json { b: { c: { d: 4 } } }
+@test @get(a.b.c.d) == 4
+@test @get(a.b.c) == Dict("d" => 4)
+@test @get(a.b) == @json { c: { d: 4 } }

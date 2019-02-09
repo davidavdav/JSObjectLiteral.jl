@@ -5,20 +5,43 @@ This package provides a macro `@json` than parses a Julia expression, and tries 
 
 I am not sure if this is useful for anything else than for me trying to understand macros and evaluation in Julia...
 
-## Example
+## `@json` expression
+
+Parses the Julia expression as a javascript object iteral.  String literals need to be doubly quoted.
+
+### Example
 
 ```julia
+## input
 e = 5.0
 g = "gee!"
 @json {
   a: 1,
-  b: [2, 3],
+  b: [2, 3 * 3],
   c : {
     d: "doubly-quoted string",
     e
   },
   f: g
 }
+## results in
+Dict{String,Any} with 4 entries:
+  "f" => "gee!"
+  "c" => Dict{String,Any}("e"=>5.0,"d"=>"doubly-quoted string")
+  "b" => [2, 9]
+  "a" => 1
 ```
 
 Please note that we can't fully parse all javascript object literals, as Julia can't interpret singly-quoted strings as strings, only single characters can be parsed like this.
+
+## Deep object traversal with `@get`
+
+`@get(dotted expression)` traverses a hierachical json-like object directly.
+
+### Example
+```julia
+a = @json { b: { c: { d: 4 } } }
+@get(a.b.c.d) == 4
+@get(a.b.c) == Dict("d" => 4)
+@get(a.b) == @json { c: { d: 4 } }
+```
