@@ -4,7 +4,7 @@
 
 Parse javascript-like object literals in Julia into a Julia object
 
-This package provides a macro `@json` than parses a Julia expression, and tries to form Julia object from that.  You can use javascript shortcuts like `@json { a: b }` to write `Dict("a" => b)` and even `@json { a }` to write `Dict("a" => a)`.
+This package provides a macro `@json` that parses a Julia expression, and tries to form a Julia object from that.  You can use javascript shortcuts like `@json { a: b }` to write `Dict("a" => b)` and even `@json { a }` to write `Dict("a" => a)`.
 
 I am not sure if this is useful for anything else than for me trying to understand macros and evaluation in Julia...
 
@@ -27,7 +27,7 @@ g = "gee!"
   },
   f: g
 }
-## results in
+## results
 Dict{String,Any} with 4 entries:
   "f" => "gee!"
   "c" => Dict{String,Any}("e"=>5.0,"d"=>"doubly-quoted string")
@@ -48,3 +48,5 @@ a = @json { b: { c: { d: 4 } } }
 @get(a.b.c) == Dict("d" => 4)
 @get(a.b) == @json { c: { d: 4 } }
 ```
+
+In the future we may allow assignment using a deep index expression.  

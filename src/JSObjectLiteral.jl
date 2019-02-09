@@ -32,13 +32,17 @@ macro json(object)
 end
 
 """json(Expr): turn expression into a json object"""
-function json(e:: Expr)
-    if e.head == :braces
-        return Dict(pair(a) for a in e.args)
-    elseif e.head == :vect
-        return [json(a) for a in e.args]
+function json(expr:: Expr)
+    if expr.head == :braces
+        return Dict(pair(a) for a in expr.args)
+    elseif expr.head == :vect
+        return [json(a) for a in expr.args]
+    elseif expr.head == :.
+        return eeval(get(expr.args...))
+    elseif expr.head == :(=)
+        return eeval(assign(expr.args...))
     else
-        return Core.eval(Main, e)
+        return eeval(e)
     end
 end
 
@@ -48,11 +52,11 @@ function pair(e::Expr)
     end
     return string(e.args[2]) => json(e.args[3])
 end
-pair(s::Symbol) = string(s) => Core.eval(Main, s)
+pair(s::Symbol) = string(s) => eeval(s)
 
 json(x::Number) = x
 json(s::AbstractString) = s
-json(s::Symbol) = Core.eval(Main, s)
+json(s::Symbol) = eeval(s)
 json(c::Char) = string(c)
 json(x::T) where T = error("Not a JSON literal type ", T)
 
@@ -60,8 +64,10 @@ json(x::T) where T = error("Not a JSON literal type ", T)
 macro get(expr::Expr)
     if expr.head == :.
         eeval(get(expr.args...))
+    elseif expr.head == :(=)
+        eeval(assign(expr.args...))
     else
-        error("Expected . operator")
+        error("Expected . or = operator")
     end
 end
 
@@ -77,6 +83,15 @@ function get(expr::Expr, key::QuoteNode)
     if expr.head == :.
         dict = get(expr.args...)
         return Expr(:ref, dict, string(key.value))
+    end
+end
+
+function assign(expr::Expr, value)
+    dump(expr)
+    dump(value)
+    if expr.head == :.
+        dict = get(expr.args...)
+        return Expr(:(=), dict, value)
     end
 end
 
