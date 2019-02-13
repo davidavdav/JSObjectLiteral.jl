@@ -1,8 +1,71 @@
 module JSObjectLiteral
 
-export @json, @get
+export @js, @json, @get, @identity
 
+macro identity(e)
+    #ret = id(__module__, e)
+    #dump(ret)
+    :($(esc(e)))
+end
+
+id(m, e::Expr) = :($(esc(e)))
+id(m, s::Symbol) = :($(esc(s)))
+id(m, x) = x
+
+## evaluate in calling environment
 eeval(x) = Core.eval(Main, x)
+
+macro js(expr::Expr)
+    js(expr)
+end
+
+## for expressions, dispatch according to the head
+js(expr::Expr) = js(Val{expr.head}, expr)
+js(x) = eeval(x)
+
+## assignment
+function js(::Type{Val{:(=)}}, expr)
+    println("assignment ", length(expr.args))
+    left = js(expr.args[1])
+    right = js(expr.args[2])
+    return Expr(expr.head, left, right)
+end
+
+## key index
+function js(::Type{Val{:.}}, expr)
+    return Expr(:ref, js(expr.args[1]), string(expr.args[2].value))
+end
+
+## array index
+function js(::Type{Val{:ref}}, expr)
+    return Expr(:ref, js(expr.args[1]), expr.args[2])
+end
+
+## dictionary creation
+function js(::Type{Val{:braces}}, expr)
+    return Dict{String,Any}(pair(a) for a in expr.args)
+end
+
+function pair(e::Expr)
+    if e.head != :call || length(e.args) !=3 || e.args[1] != :(:)
+        error("Expected colon operator with 2 arguments")
+    end
+    return keyvalue(e.args[2], e.args[3])
+end
+pair(s::Symbol) = string(s) => js(s)
+
+function keyvalue(key::Expr, value)
+    key.head == :. || error("Expected . operator")
+    expr = Expr(:braces, Expr(:call, :(:), key.args[2].value, value))
+    return keyvalue(key.args[1], expr)
+end
+keyvalue(key::Symbol, value) = string(key) => js(value)
+keyvalue(key::AbstractString, value) = key => js(value)
+
+function js(x, expr)
+    println("catchall")
+    return eeval(expr)
+end
 
 """
 @json expression
@@ -46,14 +109,6 @@ function json(expr:: Expr)
     end
 end
 
-function pair(e::Expr)
-    if e.head != :call || length(e.args) !=3 || e.args[1] != :(:)
-        error("Expected colon operator with 2 arguments")
-    end
-    return string(e.args[2]) => json(e.args[3])
-end
-pair(s::Symbol) = string(s) => eeval(s)
-
 json(x::Number) = x
 json(s::AbstractString) = s
 json(s::Symbol) = eeval(s)
@@ -94,5 +149,10 @@ function assign(expr::Expr, value)
         return Expr(:(=), dict, value)
     end
 end
+
+macro ee(x)
+    Core.eval(__module__, x)
+end
+
 
 end
