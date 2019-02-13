@@ -4,11 +4,11 @@
 
 Parse javascript-like object literals in Julia into a Julia object
 
-This package provides a macro `@json` that parses a Julia expression, and tries to form a Julia object from that.  You can use javascript shortcuts like `@json { a: b }` to write `Dict("a" => b)` and even `@json { a }` to write `Dict("a" => a)`.
+This package provides a macro `@js` that parses a Julia expression interpreted as javascript, and tries to form a Julia object from that.  You can use javascript shortcuts like `@js { a: b }` to write `Dict("a" => b)` and even `@js { a }` to write `Dict("a" => a)`.
 
 I am not sure if this is useful for anything else than for me trying to understand macros and evaluation in Julia...
 
-## `@json` expression
+## `@js` expression
 
 Parses the Julia expression as a javascript object iteral.  String literals need to be doubly quoted.
 
@@ -37,16 +37,25 @@ Dict{String,Any} with 4 entries:
 
 Please note that we can't fully parse all javascript object literals, as Julia can't interpret singly-quoted strings as strings, only single characters can be parsed like this.
 
-## Deep object traversal with `@get`
+## Deep object traversal with `@js
 
 `@get(dotted expression)` traverses a hierachical json-like object directly.
 
 ### Example
 ```julia
-a = @json { b: { c: { d: 4 } } }
-@get(a.b.c.d) == 4
-@get(a.b.c) == Dict("d" => 4)
-@get(a.b) == @json { c: { d: 4 } }
+a = @js { b: { c: { d: 4 } } }
+@js(a.b.c.d) == 4
+@js(a.b.c) == Dict("d" => 4)
+@js(a.b) == @js { c: { d: 4 } }
 ```
 
-In the future we may allow assignment using a deep index expression.  
+## Assignment
+
+You make assignments in the `@js` expression:
+```julia
+@js a = { b: 3 }
+@js a.b = 4
+@js a.b = { c: 5 }
+@js a.b.c = 6
+@js a, b = [ { c: 3}, { d: 4} ]
+```

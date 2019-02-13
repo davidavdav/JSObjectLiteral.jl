@@ -1,34 +1,57 @@
 module JSObjectLiteral
 
-export @js, @json, @get, @identity
+export @js
 
-macro identity(e)
-    #ret = id(__module__, e)
-    #dump(ret)
-    :($(esc(e)))
-end
+"""
+@json expression
 
-id(m, e::Expr) = :($(esc(e)))
-id(m, s::Symbol) = :($(esc(s)))
-id(m, x) = x
+Tries to parse `expression` as a javascript object literal.
 
-## evaluate in calling environment
-eeval(x) = Core.eval(Main, x)
+If `expression` is a valid Julia expression, and (almost) looks like a javascript
+object literal, it is parsed and converted into a Julia json-like structure.
 
-macro js(expr::Expr)
-    js(expr)
+# Examples
+```
+e = 5.0
+g = "gee!"
+j = Dict("k": 1_000)
+@js {
+  a: 1,
+  b: [2, 3],
+  c : {
+    d: "doubly-quoted string",
+    e
+  },
+  f: g,
+  h.i: j.k
+}
+```
+"""
+macro js(expr)
+    ##dump(expr)
+    ret = :($(esc(js(expr))))
+    ##dump(ret, maxdepth=20)
+    return ret
 end
 
 ## for expressions, dispatch according to the head
 js(expr::Expr) = js(Val{expr.head}, expr)
-js(x) = eeval(x)
+js(x) = x
 
 ## assignment
 function js(::Type{Val{:(=)}}, expr)
-    println("assignment ", length(expr.args))
-    left = js(expr.args[1])
-    right = js(expr.args[2])
-    return Expr(expr.head, left, right)
+    if isa(expr.args[1], Expr) && expr.args[1].head == :braces
+        error("Assignment to braces expression not supported yet")
+        all(isa(arg, Symbol) for arg in expr.args[1].args) || error("Assignment to braced expression must only contain keys")
+        lhs = Expr(:tuple, expr.args[1].args...)
+        keys = map(string, expr.args[1].args...)
+        dict = js(expr.args[2])
+        rhs = :([$dict[key] for key in $keys])
+        return Expr(:(=), lhs, :($rhs))
+    else
+        expr.args = map(js, expr.args)
+        return expr
+    end
 end
 
 ## key index
@@ -43,116 +66,63 @@ end
 
 ## dictionary creation
 function js(::Type{Val{:braces}}, expr)
-    return Dict{String,Any}(pair(a) for a in expr.args)
+    dict = :(Dict{String,Any}())
+    for arg in expr.args
+        push!(dict.args, pair(arg))
+    end
+    return dict
 end
 
 function pair(e::Expr)
     if e.head != :call || length(e.args) !=3 || e.args[1] != :(:)
-        error("Expected colon operator with 2 arguments")
+        error("Expected : operator with 2 arguments")
     end
     return keyvalue(e.args[2], e.args[3])
 end
-pair(s::Symbol) = string(s) => js(s)
+pair(s::Symbol) = :($(string(s)) => $(js(s)))
 
+## keyvalue deals with keys of the type a.b
 function keyvalue(key::Expr, value)
     key.head == :. || error("Expected . operator")
     expr = Expr(:braces, Expr(:call, :(:), key.args[2].value, value))
     return keyvalue(key.args[1], expr)
 end
-keyvalue(key::Symbol, value) = string(key) => js(value)
-keyvalue(key::AbstractString, value) = key => js(value)
+keyvalue(key::Symbol, value) = :($(string(key)) => $(js(value)))
+keyvalue(key::AbstractString, value) = :(key => $(js(value)))
+
+## array creation
+function js(::Type{Val{:vect}}, expr)
+    return Expr(:ref, :Any, map(js, expr.args)...) ## make sure
+end
+
 
 function js(x, expr)
-    println("catchall")
-    return eeval(expr)
+    ## @warn "catchall js(x, expr)"
+    return expr
 end
 
-"""
-@json expression
+## experimental stuff
 
-Tries to parse `expression` as a javascript object literal.
-
-If `expression` is a valid Julia expression, and (almost) looks like a javascript
-object literal, it is parsed and converted into a Julia json-like structure.
-
-# Examples
-```
-e = 5.0
-g = "gee!"
-@json {
-  a: 1,
-  b: [2, 3],
-  c : {
-    d: "doubly-quoted string",
-    e
-  },
-  f: g
-}
-```
-"""
-macro json(object)
-    json(object)
+macro identity(e)
+    :($(esc(id(e))))
 end
 
-"""json(Expr): turn expression into a json object"""
-function json(expr:: Expr)
-    if expr.head == :braces
-        return Dict(pair(a) for a in expr.args)
-    elseif expr.head == :vect
-        return [json(a) for a in expr.args]
-    elseif expr.head == :.
-        return eeval(get(expr.args...))
-    elseif expr.head == :(=)
-        return eeval(assign(expr.args...))
-    else
-        return eeval(e)
-    end
+function id(e::Expr)
+    print("Expression ")
+    dump(e)
+    return e
 end
 
-json(x::Number) = x
-json(s::AbstractString) = s
-json(s::Symbol) = eeval(s)
-json(c::Char) = string(c)
-json(x::T) where T = error("Not a JSON literal type ", T)
-
-
-macro get(expr::Expr)
-    if expr.head == :.
-        eeval(get(expr.args...))
-    elseif expr.head == :(=)
-        eeval(assign(expr.args...))
-    else
-        error("Expected . or = operator")
-    end
+function id(s::Symbol)
+    print("Symbol ")
+    dump(s)
+    return s
 end
 
-macro get(x)
-    eeval(x)
+function id(x)
+    print("Other ")
+    dump(x)
+    return x
 end
-
-function get(dict::Symbol, key::QuoteNode)
-    return Expr(:ref, dict, string(key.value))
-end
-
-function get(expr::Expr, key::QuoteNode)
-    if expr.head == :.
-        dict = get(expr.args...)
-        return Expr(:ref, dict, string(key.value))
-    end
-end
-
-function assign(expr::Expr, value)
-    dump(expr)
-    dump(value)
-    if expr.head == :.
-        dict = get(expr.args...)
-        return Expr(:(=), dict, value)
-    end
-end
-
-macro ee(x)
-    Core.eval(__module__, x)
-end
-
 
 end

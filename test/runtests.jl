@@ -4,7 +4,7 @@ using Test
 e = π
 g = "gee!"
 
-a = @json {
+a = @js {
   a: 1,
   b: [2, 3 * 3],
   c : {
@@ -26,14 +26,58 @@ b = Dict{String, Any}(
 
 @test a == b
 
-@test Dict{String, Any}( "a" => "a") == @json { a: "a" }
+@test Dict{String, Any}( "a" => "a") == @js { a: "a" }
 
-a = @json { b: { c: { d: 4 } } }
-@test @get(a.b.c.d) == 4
-@test @get(a.b.c) == Dict("d" => 4)
-@test @get(a.b) == @json { c: { d: 4 } }
+a = @js { b: { c: { d: 4 } } }
 
-a = @json { f: x -> x^2, b: { g: √ } }
+@test a == @js { b.c.d: 4 }
+@test @js(a.b.c.d) == 4
+@test @js(a.b.c) == Dict("d" => 4)
+@test @js(a.b) == @js { c: { d: 4 } }
+
+a = @js { f: x -> x^2, b: { g: √ } }
 
 @test a["f"](5) == 25
-@test @get(a.b.g)(49) == 7
+@test @js(a.b.g)(49) == 7
+
+@test Dict("a" => "b") == @js { a: "b" }
+
+b = @js { c: 3 }
+@test Dict("a" => b) == @js { a: b }
+
+a = 101
+@test Dict("a" => a) == @js { a }
+@test Dict("a" => a+1 ) == @js { a: a + 1 }
+
+e = exp(1)
+@test Dict("a" => a, "b" => Dict("c" => Dict("d" => 5), "e" => e), "f" => [1, Dict("g" => 2)]) == @js { a, b: { c: { d: 5 }, e }, f: [1, { g: 2} ] }
+@test Dict("a" => Dict("b" => 3)) == @js { a.b: 3 }
+@test [a, b, 3] == @js [ a, b, 3 ]
+
+c = [1, 2, @js({d: 3})]
+a = @js { c }
+@test @js(a.c[3].d) == 3
+
+@js a = { b.c.d: 4 }
+@test @js(a.b) == @js { c: { d: 4 } }
+@test @js(a.b.c) == @js { d: 4 }
+
+@js a = { b: "c" }
+@test a == @js { b: "c" }
+
+@js a.b = "d"
+@test a == @js { b: "d" }
+
+@js a.b = { c: "d" }
+@test a == @js { b.c: "d" }
+
+@js a.b.c = "e"
+@test a == @js { b: { c: "e" } }
+
+@js b = { c: 3 }
+@js a.b = b.c
+@test a == @js { b: 3 }
+
+@js a, b = [ { a: 1 }, { b: 2} ]
+@test a == @js { a: 1 }
+@test b == @js { b: 2 }
