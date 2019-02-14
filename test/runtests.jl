@@ -57,6 +57,7 @@ e = exp(1)
 c = [1, 2, @js({d: 3})]
 a = @js { c }
 @test @js(a.c[3].d) == 3
+@test @js(a.c[a.c[3].d].d) == 3
 
 @js a = { b.c.d: 4 }
 @test @js(a.b) == @js { c: { d: 4 } }
@@ -81,3 +82,9 @@ a = @js { c }
 @js a, b = [ { a: 1 }, { b: 2} ]
 @test a == @js { a: 1 }
 @test b == @js { b: 2 }
+
+@js dict = { d: π, e: [ 1, { f: 2}, 3], c: sin }
+@js { c, d, e } = dict
+@test c == sin
+@test d == π
+@test e == [ 1, Dict("f" => 2), 3]

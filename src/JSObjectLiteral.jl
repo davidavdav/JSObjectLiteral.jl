@@ -28,9 +28,7 @@ j = Dict("k": 1_000)
 ```
 """
 macro js(expr)
-    ##dump(expr)
     ret = :($(esc(js(expr))))
-    ##dump(ret, maxdepth=20)
     return ret
 end
 
@@ -40,11 +38,11 @@ js(x) = x
 
 ## assignment
 function js(::Type{Val{:(=)}}, expr)
-    if isa(expr.args[1], Expr) && expr.args[1].head == :braces
-        error("Assignment to braces expression not supported yet")
-        all(isa(arg, Symbol) for arg in expr.args[1].args) || error("Assignment to braced expression must only contain keys")
+    if isa(expr.args[1], Expr) && expr.args[1].head == :braces ## { a, b } = dict
+        ##  error("Assignment to braces expression not supported yet")
+        all(isa(arg, Symbol) for arg in expr.args[1].args) || error("Braced expression as LHS must only contain keys")
         lhs = Expr(:tuple, expr.args[1].args...)
-        keys = map(string, expr.args[1].args...)
+        keys = map(string, expr.args[1].args)
         dict = js(expr.args[2])
         rhs = :([$dict[key] for key in $keys])
         return Expr(:(=), lhs, :($rhs))
@@ -61,7 +59,8 @@ end
 
 ## array index
 function js(::Type{Val{:ref}}, expr)
-    return Expr(:ref, js(expr.args[1]), expr.args[2])
+    expr.args = map(js, expr.args)
+    return expr
 end
 
 ## dictionary creation
@@ -95,9 +94,18 @@ function js(::Type{Val{:vect}}, expr)
     return Expr(:ref, :Any, map(js, expr.args)...) ## make sure
 end
 
+## cover == amongst others
+function js(::Type{Val{:call}}, expr)
+    expr.args[2:end] = map(js, expr.args[2:end])
+    return expr
+end
+
+js(::Type{Val{s}}, expr) where s = expr
 
 function js(x, expr)
-    ## @warn "catchall js(x, expr)"
+    @warn "catchall js(x, expr) " * string(typeof(x)) * " " * string(expr)
+    dump(x)
+    dump(expr)
     return expr
 end
 

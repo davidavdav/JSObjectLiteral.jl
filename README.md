@@ -10,7 +10,7 @@ I am not sure if this is useful for anything else than for me trying to understa
 
 ## `@js` expression
 
-Parses the Julia expression as a javascript object iteral.  String literals need to be doubly quoted.
+Parses the Julia expression as a javascript object iteral.  It can be called either as `@js expression` or `@js(expression)`, the latter case explicitly delimits the extent of the expression being parsed by the macro.
 
 ### Example
 
@@ -18,28 +18,29 @@ Parses the Julia expression as a javascript object iteral.  String literals need
 ## input
 e = 5.0
 g = "gee!"
-@json {
+@js {
   a: 1,
-  b: [2, 3 * 3],
+  b: [2, 3 * 3, √],
   c : {
     d: "doubly-quoted string",
     e
   },
-  f: g
+  f.g: g
 }
 ## results
 Dict{String,Any} with 4 entries:
-  "f" => "gee!"
+  "f" => Dict{String,Any}("g"=>"gee!")
   "c" => Dict{String,Any}("e"=>5.0,"d"=>"doubly-quoted string")
-  "b" => [2, 9]
+  "b" => Any[2, 9, sqrt]
   "a" => 1
 ```
+All dicts created in the process are always of type `Dict{String,Anyy}`, and all arrays are
 
 Please note that we can't fully parse all javascript object literals, as Julia can't interpret singly-quoted strings as strings, only single characters can be parsed like this.
 
-## Deep object traversal with `@js
+## Deep object traversal with `@js`
 
-`@get(dotted expression)` traverses a hierachical json-like object directly.
+`@js(dotted expression)` traverses a hierachical json-like object directly.
 
 ### Example
 ```julia
@@ -47,6 +48,14 @@ a = @js { b: { c: { d: 4 } } }
 @js(a.b.c.d) == 4
 @js(a.b.c) == Dict("d" => 4)
 @js(a.b) == @js { c: { d: 4 } }
+@js(a.b) == @js { c.d: 4 }
+```
+The RHS in the last expression shows object creation in deep traversal.  Standard javascript does not allow this.
+
+You can mix strings as keys with indices.
+```julia
+d = @js { a: 1, b: [1, {c: 2}, 3], d: 4}
+@js d.b[2].c
 ```
 
 ## Assignment
@@ -58,4 +67,9 @@ You make assignments in the `@js` expression:
 @js a.b = { c: 5 }
 @js a.b.c = 6
 @js a, b = [ { c: 3}, { d: 4} ]
+@js dict = { d: π, e: [ 1, { f: 2}, 3], c: sin }
+@js { c, d, e } = dict
+c == sin ## true
+d == π ## true
+e == [ 1, Dict("f" => 2), 3] ## true
 ```
