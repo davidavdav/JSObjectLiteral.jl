@@ -28,8 +28,7 @@ j = Dict("k": 1_000)
 ```
 """
 macro js(expr)
-    ret = :($(esc(js(expr))))
-    return ret
+    return esc(js(expr))
 end
 
 ## for expressions, dispatch according to the head
@@ -91,7 +90,7 @@ keyvalue(key::AbstractString, value) = :(key => $(js(value)))
 
 ## array creation
 function js(::Type{Val{:vect}}, expr)
-    return Expr(:ref, :Any, map(js, expr.args)...) ## make sure
+    return Expr(:ref, :Any, map(js, expr.args)...) ## make sure arrays are of type Any
 end
 
 ## cover == amongst others
@@ -107,30 +106,6 @@ function js(x, expr)
     dump(x)
     dump(expr)
     return expr
-end
-
-## experimental stuff
-
-macro identity(e)
-    :($(esc(id(e))))
-end
-
-function id(e::Expr)
-    print("Expression ")
-    dump(e)
-    return e
-end
-
-function id(s::Symbol)
-    print("Symbol ")
-    dump(s)
-    return s
-end
-
-function id(x)
-    print("Other ")
-    dump(x)
-    return x
 end
 
 end

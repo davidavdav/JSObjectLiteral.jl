@@ -34,7 +34,7 @@ Dict{String,Any} with 4 entries:
   "b" => Any[2, 9, sqrt]
   "a" => 1
 ```
-All dicts created in the process are always of type `Dict{String,Anyy}`, and all arrays are
+All dicts created in the process are always of type `Dict{String,Any}`, and all arrays are of type `Array{Any}`, to cater for future assignments of the elements to different types. 
 
 Please note that we can't fully parse all javascript object literals, as Julia can't interpret singly-quoted strings as strings, only single characters can be parsed like this.
 
