@@ -86,7 +86,7 @@ function keyvalue(key::Expr, value)
     return keyvalue(key.args[1], expr)
 end
 keyvalue(key::Symbol, value) = :($(string(key)) => $(js(value)))
-keyvalue(key::AbstractString, value) = :(key => $(js(value)))
+keyvalue(key::AbstractString, value) = :($key => $(js(value)))
 
 ## array creation
 function js(::Type{Val{:vect}}, expr)

@@ -88,3 +88,6 @@ a = @js { c }
 @test c == sin
 @test d == π
 @test e == [ 1, Dict("f" => 2), 3]
+
+## issue #2
+@test Dict("Content-Type" => "application/json") == @js { "Content-Type": "application/json"}
