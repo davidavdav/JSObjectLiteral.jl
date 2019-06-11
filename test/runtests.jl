@@ -1,6 +1,8 @@
 using JSObjectLiteral
 using Test
 
+## @js tests
+
 e = π
 g = "gee!"
 
@@ -91,3 +93,18 @@ a = @js { c }
 
 ## issue #2
 @test Dict("Content-Type" => "application/json") == @js { "Content-Type": "application/json"}
+
+## JSObject tests
+a = JSObject(@js({ b: { c: { d: 4 } } }))
+@test a.b.c.d == 4
+
+a.c = JSObject(@js({d: { e: 5}}))
+@test a.c.d.e == 5
+
+b = JSObject(@js([{c: 3}, {d: [4, {e: 5}]}]))
+@test b[1].c == 3
+@test b[2].d[1] == 4
+@test b[2].d[2].e == 5
+
+b[1] = JSObject(@js([6]))
+@test b[1][1] == 6

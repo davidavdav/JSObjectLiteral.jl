@@ -3,7 +3,7 @@ module JSObjectLiteral
 export @js
 
 """
-@json expression
+@js expression
 
 Tries to parse `expression` as a javascript object literal.
 
@@ -107,5 +107,7 @@ function js(x, expr)
     dump(expr)
     return expr
 end
+
+include("JSObject.jl")
 
 end
