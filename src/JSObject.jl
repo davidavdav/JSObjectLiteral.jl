@@ -2,7 +2,7 @@
 
 import JSON
 
-export JSObject
+export JSObject, stripobject
 
 struct JSObject{T} 
     data::T
@@ -23,11 +23,11 @@ objectify(x) = x
 Base.length(object::JSObject) = length(object.data)
 Base.size(object::JSObject) = size(object.data)
 Base.getindex(object::JSObject, i...) = getindex(getfield(object, :data), i...)
-Base.setindex!(object::JSObject, value, index...) = setindex!(getfield(object, :data), value, index...)
-Base.show(io::IO, object::JSObject) = print(io, "@js", JSON.json(stripobject(object)))
+Base.setindex!(object::JSObject, value, index...) = setindex!(getfield(object, :data), objectify(value), index...)
+Base.show(io::IO, object::JSObject) = print(io, JSON.json(stripobject(object)))
 
 Base.getproperty(object::JSObject{JSDict}, key::Symbol) = getindex(getfield(object, :data), String(key))
-Base.setproperty!(object::JSObject{JSDict}, key::Symbol, value) = setindex!(getfield(object, :data), value, String(key))
+Base.setproperty!(object::JSObject{JSDict}, key::Symbol, value) = setindex!(getfield(object, :data), objectify(value), String(key))
 
 ## The reverse operations, going from JSObject to plain Julia dicts/vectors
 Base.convert(::Type{Dict}, x::JSObject{JSDict}) = stripobject(x)

@@ -97,14 +97,20 @@ a = @js { c }
 ## JSObject tests
 a = JSObject(@js({ b: { c: { d: 4 } } }))
 @test a.b.c.d == 4
+@test a["b"].c["d"] == 4
 
-a.c = JSObject(@js({d: { e: 5}}))
-@test a.c.d.e == 5
+a.c = JSObject(@js({ d: { e: [5, 6] } }))
+@test a.c.d.e[2] == 6
 
-b = JSObject(@js([{c: 3}, {d: [4, {e: 5}]}]))
+@test stripobject(a) == @js { b: { c: { d: 4 } }, c: { d: { e: [5, 6] } } }
+
+b = JSObject(@js([ { c: 3 }, { d: [ 4, { e: 5 } ] } ]))
 @test b[1].c == 3
 @test b[2].d[1] == 4
 @test b[2].d[2].e == 5
 
-b[1] = JSObject(@js([6]))
+b[1] = @js([6, { f: 7}])
 @test b[1][1] == 6
+@test b[1][2].f == 7
+
+@test stripobject(b) == @js [ [6, { f: 7} ], { d: [4, { e: 5 } ] } ]

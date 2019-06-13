@@ -73,3 +73,38 @@ c == sin ## true
 d == π ## true
 e == [ 1, Dict("f" => 2), 3] ## true
 ```
+
+## The JSObject struct
+
+We also have some support for dot-notation of JS-like objects in a native Julia struct.  This might already have been implemented before, and probably better, so please submit an issue "irrelevant code" if you know of any better implementation. 
+
+The `JSObject` struct can wrap a classic Dict/Array based JS-like object, thus providing native Julia support for dot notation, using the `getproperty()` function. 
+
+Examples:
+```julia
+a = JSObject(@js({ b: { c: { d: 4 } } }))
+a.b.c.d == 4 ## true
+a["b"].c["d"] == 4 ## true
+
+a.c = @js {d: { e: [5, 6] } }
+a.c.d.e[2] == 6 ## true
+
+b = JSObject(@js([{c: 3}, {d: [4, {e: 5}]}]))
+b[1].c == 3
+b[2].d[1] == 4
+b[2].d[2].e == 5
+```
+The `JSObject` can hold a `Dict{String, Any}` or a `Vector{Any}` (or even a plain number or `String`, but that is not so useful).  
+
+In assigning to a member of a `JSObject`, as in `a.c = @js {d: { e: [5, 6]}}`, the RHS is automatically wrapped in a `JSObject` for consistency. 
+
+The constructors `JSObject()` parse all the values, and recursively make them into `JSObject`s in case they are of type `Dict` or `Vector`.  Other types are left as-is, so deeper `Int`s or floats are not unnecissarily wrapped.  
+
+### Exporting to a plain old Julias JSON structure
+
+You can access members of the `JSObject` struct using indexing `[]` and `.` notation.  But you may need to export the `JSObject` as a plain old JSON, consisting of ordinary `Dict`s and `Array`s.  You can do that using
+```julia
+stripobject(object::JSObject)
+```
+
+In fact, this happens in the `show(io::IO, object::JSObject)` function to consicely display a variable of type `JSObject`, using `JSON.json()`. 
