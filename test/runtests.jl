@@ -94,6 +94,10 @@ a = @js { c }
 ## issue #2
 @test Dict("Content-Type" => "application/json") == @js { "Content-Type": "application/json"}
 
+@test nothing === @js null
+@test Dict("a" => nothing) == @js { a: null }
+@test [ 1, nothing, Dict("b" => nothing), [ nothing, 3] ] == @js [ 1, null, {b: null}, [null, 3] ]
+
 ## JSObject tests
 a = JSObject(@js({ b: { c: { d: 4 } } }))
 @test a.b.c.d == 4
