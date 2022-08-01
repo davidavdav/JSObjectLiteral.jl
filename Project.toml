@@ -1,7 +1,7 @@
 name = "JSObjectLiteral"
 uuid = "a7b85b94-2b9e-11e9-2e5f-79ec22955f58"
 authors = ["David A. van Leeuwen <david.vanleeuwen@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"

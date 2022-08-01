@@ -1,3 +1,5 @@
+#!/usr/bin/env julia
+
 module JSObjectLiteral
 
 export @js
@@ -33,7 +35,7 @@ end
 
 ## for expressions, dispatch according to the head
 js(expr::Expr) = js(Val{expr.head}, expr)
-js(x) = x
+js(x) = ifelse(x == :null, nothing, x)
 
 ## assignment
 function js(::Type{Val{:(=)}}, expr)

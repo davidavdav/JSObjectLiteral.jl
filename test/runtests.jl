@@ -114,3 +114,5 @@ b[1] = @js([6, { f: 7}])
 @test b[1][2].f == 7
 
 @test stripobject(b) == @js [ [6, { f: 7} ], { d: [4, { e: 5 } ] } ]
+
+@test_throws ErrorException JSObject(rand(2,2))
